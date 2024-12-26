@@ -498,7 +498,25 @@ class ChatService:
 
                         async for line in response.aiter_lines():
                             logger.info(f"{line}")
-                            yield line + "\n\n"
+                            if line.startswith("data: "):
+                                try:
+                                    json_data = json.loads(line[6:])
+                                    # 这里需要根据Gemini API的响应结构来提取文本内容
+                                    # 示例：如果响应结构是 {'candidates': [{'content': {'parts': [{'text': '...'}]}}]}
+                                    if 'candidates' in json_data and json_data['candidates']:
+                                        for candidate in json_data['candidates']:
+                                            if 'content' in candidate and 'parts' in candidate['content']:
+                                                for part in candidate['content']['parts']:
+                                                  if 'text' in part:
+                                                      yield part['text']
+                                    # 如果响应结构是其他形式，则需要修改这里的解析逻辑
+                                except json.JSONDecodeError:
+                                    logger.warning(f"Failed to decode JSON: {line}")
+                                    continue # 如果解析失败，则忽略该行数据
+                            elif line.strip() == "":
+                                continue # 忽略空行
+                            else:
+                                logger.warning(f"Unexpected line format: {line}")
                         return
 
             except httpx.ReadTimeout:
