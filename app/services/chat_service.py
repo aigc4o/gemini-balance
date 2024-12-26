@@ -497,6 +497,7 @@ class ChatService:
                             )
 
                         async for line in response.aiter_lines():
+                            logger.info(f"{line}")
                             yield line + "\n\n"
                         return
 
